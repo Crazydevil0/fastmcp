@@ -344,6 +344,10 @@ type ServerOptions<T extends FastMCPSessionAuth> = {
   name: string;
   version: `${number}.${number}.${number}`;
   authenticate?: Authenticate<T>;
+  /**
+   * Request timeout in milliseconds. Defaults to 60000 (1 minute).
+   */
+  timeout?: number;
 };
 
 type LoggingLevel =
@@ -390,6 +394,7 @@ export class FastMCPSession<T extends FastMCPSessionAuth = FastMCPSessionAuth> e
     resources,
     resourcesTemplates,
     prompts,
+    timeout = 60000,
   }: {
     auth?: T;
     name: string;
@@ -398,6 +403,7 @@ export class FastMCPSession<T extends FastMCPSessionAuth = FastMCPSessionAuth> e
     resources: Resource[];
     resourcesTemplates: InputResourceTemplate[];
     prompts: Prompt[];
+    timeout?: number;
   }) {
     super();
 
@@ -423,7 +429,10 @@ export class FastMCPSession<T extends FastMCPSessionAuth = FastMCPSessionAuth> e
 
     this.#server = new Server(
       { name: name, version: version },
-      { capabilities: this.#capabilities },
+      { 
+        capabilities: this.#capabilities,
+        timeout: timeout 
+      },
     );
 
     this.setupErrorHandling();
@@ -1107,6 +1116,7 @@ export class FastMCP<T extends Record<string, unknown> | undefined = undefined> 
         resources: this.#resources,
         resourcesTemplates: this.#resourcesTemplates,
         prompts: this.#prompts,
+        timeout: this.#options.timeout,
       });
 
       await session.connect(transport);
@@ -1136,6 +1146,7 @@ export class FastMCP<T extends Record<string, unknown> | undefined = undefined> 
             resources: this.#resources,
             resourcesTemplates: this.#resourcesTemplates,
             prompts: this.#prompts,
+            timeout: this.#options.timeout,
           });
         },
         onClose: (session) => {
