@@ -1,4 +1,4 @@
-# FastMCP
+# FastMCP (Forked by Crazydevil0)
 
 A TypeScript framework for building [MCP](https://glama.ai/mcp) servers capable of handling client sessions.
 
