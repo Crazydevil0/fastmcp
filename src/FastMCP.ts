@@ -344,9 +344,6 @@ type ServerOptions<T extends FastMCPSessionAuth> = {
   name: string;
   version: `${number}.${number}.${number}`;
   authenticate?: Authenticate<T>;
-  /**
-   * Request timeout in milliseconds. Defaults to 60000 (1 minute).
-   */
   timeout?: number;
 };
 
@@ -385,6 +382,7 @@ export class FastMCPSession<T extends FastMCPSessionAuth = FastMCPSessionAuth> e
   #roots: Root[] = [];
   #server: Server;
   #auth: T | undefined;
+  #timeout: number;
 
   constructor({
     auth,
@@ -408,6 +406,7 @@ export class FastMCPSession<T extends FastMCPSessionAuth = FastMCPSessionAuth> e
     super();
 
     this.#auth = auth;
+    this.#timeout = timeout;
 
     if (tools.length) {
       this.#capabilities.tools = {};
@@ -430,8 +429,7 @@ export class FastMCPSession<T extends FastMCPSessionAuth = FastMCPSessionAuth> e
     this.#server = new Server(
       { name: name, version: version },
       { 
-        capabilities: this.#capabilities,
-        timeout: timeout 
+        capabilities: this.#capabilities
       },
     );
 
@@ -550,7 +548,7 @@ export class FastMCPSession<T extends FastMCPSessionAuth = FastMCPSessionAuth> e
   public async requestSampling(
     message: z.infer<typeof CreateMessageRequestSchema>["params"],
   ): Promise<SamplingResponse> {
-    return this.#server.createMessage(message);
+    return this.#server.createMessage(message, { timeout: this.#timeout });
   }
 
   public async connect(transport: Transport) {
@@ -1049,12 +1047,13 @@ export class FastMCP<T extends Record<string, unknown> | undefined = undefined> 
   #sseServer: SSEServer | null = null;
   #tools: Tool<T>[] = [];
   #authenticate: Authenticate<T> | undefined;
+  #timeout: number;
 
-  constructor(public options: ServerOptions<T>) {
+  constructor(options: ServerOptions<T>) {
     super();
-
     this.#options = options;
     this.#authenticate = options.authenticate;
+    this.#timeout = options.timeout ?? 60000;
   }
 
   public get sessions(): FastMCPSession<T>[] {
@@ -1116,7 +1115,7 @@ export class FastMCP<T extends Record<string, unknown> | undefined = undefined> 
         resources: this.#resources,
         resourcesTemplates: this.#resourcesTemplates,
         prompts: this.#prompts,
-        timeout: this.#options.timeout,
+        timeout: this.#timeout,
       });
 
       await session.connect(transport);
@@ -1146,7 +1145,7 @@ export class FastMCP<T extends Record<string, unknown> | undefined = undefined> 
             resources: this.#resources,
             resourcesTemplates: this.#resourcesTemplates,
             prompts: this.#prompts,
-            timeout: this.#options.timeout,
+            timeout: this.#timeout,
           });
         },
         onClose: (session) => {
